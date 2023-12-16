@@ -1,25 +1,17 @@
 import { useRef, FormEvent, useState, useEffect } from 'react';
-import Styled from './LoginForm.styles';
+import Styled from './LoginPage.styles';
 import { jwtDecode } from "jwt-decode";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 
-import { FIREBASE_AUTH, FIREBASE_FIRESTORE } from './../../firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { FIREBASE_AUTH } from '../../../firebaseConfig';
 
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 
-type FormData = {
-  email: string;
-  password: string;
-  name: string;
-};
-
 function LoginForm() {
-  const nameRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const [isPasswordFocused, setIsPasswordFocused] = useState<boolean>(false);
@@ -46,40 +38,27 @@ function LoginForm() {
       setIsPasswordFocused(false);
     }
   };
-  
-  const handleSubmit = () => {
-    const data: FormData = {
-      name: nameRef.current ? nameRef.current.value : '',
-      email: emailRef.current ? emailRef.current.value : '',
-      password: passwordRef.current ? passwordRef.current.value : ''
-    };
 
-    console.log(data);
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    
+    // Ensure that the refs are current and have values
+    const email = emailRef.current?.value;
+    const password = passwordRef.current?.value;
 
-    createUserWithEmailAndPassword(FIREBASE_AUTH, data.email, data.password)
-    .then(async (result: any) => {
-        if (FIREBASE_AUTH.currentUser) {
-            const userDocRef = doc(FIREBASE_FIRESTORE, 'users', FIREBASE_AUTH.currentUser.uid);
-    
-            // Save the name and email to Firestore
-            await setDoc(userDocRef, {
-                name: data.name,
-                email: data.email
-            });
-    
-            console.log("result", result);
-            alert("Success! You have been successfully registered!"); 
-        } else {
-            console.log("Error: Current user is null");
-            alert("Error: Current user is not available"); 
-        }
-    })
-    .catch((error: any) => {
-        console.log("error", error);
-        alert("Error: " + error.message); 
-    });
+    if (email && password) {
+      signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
+        .then((result) => {
+          console.log("result", result);
+        })
+        .catch((error) => {
+          console.log("error", error);
+          alert("Error: " + error.message); // Using standard web alert
+        });
+    } else {
+      alert("Email and password must be provided");
+    }
   };
-
 
   function handleCallbackResponse(response: any){
     var userObject = jwtDecode(response.credential);
@@ -129,17 +108,6 @@ function LoginForm() {
             <Styled.InputContainer>
               <Styled.InputField
                 type="text"
-                ref={nameRef}
-                onFocus={handleFocusEmail}
-                onBlur={handleBlurEmail}
-              />
-              <Styled.EmailLabel hasemailcontent={isEmailFocused.toString()}>
-                Email
-              </Styled.EmailLabel>
-            </Styled.InputContainer>
-            <Styled.InputContainer>
-              <Styled.InputField
-                type="text"
                 ref={emailRef}
                 onFocus={handleFocusEmail}
                 onBlur={handleBlurEmail}
@@ -162,7 +130,7 @@ function LoginForm() {
             <Styled.Button type="submit">Continue</Styled.Button>
           </Styled.Form>
           <Styled.LoginMessage>
-            Already have an account? <Styled.WordButton onClick={()=> navigate('/login')}>Log in</Styled.WordButton>
+            Don't have an account? <Styled.WordButton onClick={()=> navigate('/signup')}>Sign up</Styled.WordButton>
           </Styled.LoginMessage>
         </Styled.FormContainer>
         <Styled.Separator>
