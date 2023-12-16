@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect } from 'react';
-import Styled from '../LoginPage/LoginPage.styles';
 import { jwtDecode } from "jwt-decode";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { auth } from './../../../firebaseConfig';
 import { useUserContext } from './../../context/userContext';
+import Styled from '../LoginPage/LoginPage.styles';
 
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -18,7 +18,6 @@ function LoginForm() {
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const [isPasswordFocused, setIsPasswordFocused] = useState<boolean>(false);
   const [isEmailFocused, setIsEmailFocused] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const { setAccessToken } = useUserContext();
@@ -58,6 +57,7 @@ function LoginForm() {
           const token = await userCredential.user.getIdToken();
   
           setAccessToken(token);
+          navigate('/')
         }
       } catch (error) {
         if (error instanceof Error) setError(error.message)
