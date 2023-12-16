@@ -1,22 +1,16 @@
-import { useRef, FormEvent, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Styled from '../LoginPage/LoginPage.styles';
 import { jwtDecode } from "jwt-decode";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 
-import { FIREBASE_AUTH, FIREBASE_FIRESTORE } from '../../../firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth } from './../../../firebaseConfig';
+import { useUserContext } from './../../context/userContext';
 
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-
-type FormData = {
-  email: string;
-  password: string;
-  name: string;
-};
 
 function LoginForm() {
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -26,6 +20,8 @@ function LoginForm() {
   const [isEmailFocused, setIsEmailFocused] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const { setAccessToken } = useUserContext();
 
   const handleFocusEmail = () => {
     setIsEmailFocused(true);
@@ -47,38 +43,29 @@ function LoginForm() {
     }
   };
   
-  const handleSubmit = () => {
-    const data: FormData = {
-      name: nameRef.current ? nameRef.current.value : '',
-      email: emailRef.current ? emailRef.current.value : '',
-      password: passwordRef.current ? passwordRef.current.value : ''
-    };
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
 
-    console.log("----data----", data);
+    const email = emailRef.current?.value;
+    const password = passwordRef.current?.value;
 
-    createUserWithEmailAndPassword(FIREBASE_AUTH, data.email, data.password)
-    .then(async (result: any) => {
-        console.log("---result---", result, "---result---");
-        if (FIREBASE_AUTH.currentUser) {
-            const userDocRef = doc(FIREBASE_FIRESTORE, 'users', FIREBASE_AUTH.currentUser.uid);
-    
-            // Save the name and email to Firestore
-            await setDoc(userDocRef, {
-                name: data.name,
-                email: data.email
-            });
-    
-            console.log("result", result);
-            alert("Success! You have been successfully registered!"); 
-        } else {
-            console.log("Error: Current user is null");
-            alert("Error: Current user is not available"); 
+    if (email && password) {
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        
+        if(userCredential.user !== undefined){
+          const token = await userCredential.user.getIdToken();
+  
+          setAccessToken(token);
         }
-    })
-    .catch((error: any) => {
-        console.log("error", error);
-        alert("Error: " + error.message); 
-    });
+      } catch (error) {
+        if (error instanceof Error) setError(error.message)
+      }
+    } else {
+      setError('Please fill in all fields.');
+    }
+
   };
 
 

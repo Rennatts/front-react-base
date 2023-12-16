@@ -1,11 +1,11 @@
 import { useRef, FormEvent, useState, useEffect } from 'react';
 import Styled from './LoginPage.styles';
 import { jwtDecode } from "jwt-decode";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 
-import { FIREBASE_AUTH } from '../../../firebaseConfig';
+import { auth } from './../../../firebaseConfig';
+import { signInWithEmailAndPassword } from '@firebase/auth';
 
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -39,26 +39,47 @@ function LoginForm() {
     }
   };
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    
-    // Ensure that the refs are current and have values
+  
     const email = emailRef.current?.value;
     const password = passwordRef.current?.value;
-
+  
     if (email && password) {
-      signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
-        .then((result) => {
-          console.log("result", result);
-        })
-        .catch((error) => {
-          console.log("error", error);
-          alert("Error: " + error.message); // Using standard web alert
-        });
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("-----", userCredential, "-----")
+        // Handle successful login
+        // userCredential will have user information
+      } catch (error) {
+        // Handle login errors
+      }
     } else {
-      alert("Email and password must be provided");
+      // Handle case where email or password is missing
     }
   };
+
+
+  // const handleSubmit = (event: FormEvent) => {
+  //   event.preventDefault();
+    
+  //   // Ensure that the refs are current and have values
+  //   const email = emailRef.current?.value;
+  //   const password = passwordRef.current?.value;
+
+  //   if (email && password) {
+  //     signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
+  //       .then((result) => {
+  //         console.log("result", result);
+  //       })
+  //       .catch((error) => {
+  //         console.log("error", error);
+  //         alert("Error: " + error.message); // Using standard web alert
+  //       });
+  //   } else {
+  //     alert("Email and password must be provided");
+  //   }
+  // };
 
   function handleCallbackResponse(response: any){
     var userObject = jwtDecode(response.credential);
